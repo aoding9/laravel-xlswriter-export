@@ -94,10 +94,27 @@ abstract class BaseExport {
     
     public $query;
     
-    public function __construct(Builder $query) {
+    public function __construct(?Builder $query = null) {
+        $this->init($query);
+    }
+    
+    public function init($query) {
         $this->query = $query;
         $config = ['path' => $this->getTmpDir() . '/'];
-        $this->excel = (new Excel($config))->fileName($this->setFilename($this->fileName)->fileName, 'Sheet1');
+        
+        $fileName = $this->setFilename($this->fileName)->getFilename();
+        $sheetName = 'Sheet1';
+        $excel = (new Excel($config))->fileName($fileName, $sheetName);
+        $this->setExcel($excel);
+    }
+    
+    public function setExcel(Excel $excel) {
+        $this->excel = $excel;
+        return $this;
+    }
+    
+    public function getExcel() {
+        return $this->excel;
     }
     
     public function freezePanes(int $row = 2, int $column = 0) {
@@ -215,7 +232,7 @@ abstract class BaseExport {
         $this->startInsertData();
         
         $this->afterInsertData();
-    
+        
         $this->filePath = $this->output();
         
         return $this;
@@ -291,9 +308,12 @@ abstract class BaseExport {
         $index = $this->index;
         
         // 给每行数据绑定index
-        foreach ($this->data as $rowData) {
+        foreach ($this->data as $k => $rowData) {
             if ($rowData instanceof Model) {
                 $rowData->index = $index;
+            } else {
+                $rowData['index'] = $index;
+                $this->data->put($k, $rowData);
             }
             $index++;
         }
@@ -366,7 +386,8 @@ abstract class BaseExport {
         }
     }
     
-    public function beforeOutput() {}
+    public function beforeOutput() {
+    }
     
     public function output() {
         $this->beforeOutput();
@@ -534,7 +555,7 @@ abstract class BaseExport {
      * Get data with export query.
      * @param int $page
      * @param int $perPage
-     * @return array|Collection|mixed
+     * @return Collection
      */
     public function buildData(?int $page = null, ?int $perPage = null) {
         return $this->query->forPage($page, $perPage)->get();

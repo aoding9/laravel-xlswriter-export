@@ -16,7 +16,6 @@ laravel扩展：xlswriter导出
 
 ![](https://cdn.learnku.com/uploads/images/202306/15/78338/azHOlbahyX.png!large)
 
-
 ![](https://cdn.learnku.com/uploads/images/202306/08/78338/1EjVb0begV.png!large)
 
 ![](https://cdn.learnku.com/uploads/images/202306/08/78338/PKyLtlX9DV.png!large)
@@ -40,6 +39,7 @@ https://xlswriter-docs.viest.me/
 `composer config -g repo.packagist composer https://packagist.org`
 
 因为官方源下载慢，国内镜像又有各种问题可能导致安装失败，也可以把以下代码添加到composer.json，直接从github安装
+
 ```json
 {
   "repositories": [
@@ -51,11 +51,9 @@ https://xlswriter-docs.viest.me/
 }
 ```
 
-
 ### 配置
 
 暂无配置
-
 
 ### 使用
 
@@ -93,6 +91,7 @@ class UserExport extends BaseExport {
 ```
 
 ***合并单元格的示例：***
+
 ```php
 <?php
 namespace Aoding9\Laravel\Xlswriter\Export\Demo;
@@ -173,6 +172,7 @@ class UserMergeExport extends BaseExport {
 ```
 
 2、在控制器中使用
+
 ```php
 public function exportModels() {
     // 定义查询构造器，设置查询条件，如果有关联关系，使用with预加载以优化查询
@@ -184,15 +184,65 @@ public function exportModels() {
     // 合并单元格的demo
     //\Aoding9\Laravel\Xlswriter\Export\Demo\UserMergeExport::make($query)->export();
     
+    // 自定义组装数据集合
+    //\Aoding9\Laravel\Xlswriter\Export\Demo\UserExportByCollection::make()->export();
+    
     // 地区导出的demo
     //$areaQuery=Area::where('parent_code',0); // 查省份
     //\Aoding9\Laravel\Xlswriter\Export\Demo\AreaExport::make($areaQuery)->export();
 }
 ```
 
-如果map中需要调用关联关系，请使用with预加载以优化查询。
+**自定义组装数据集合**
 
-仓库中包含3个导出类的demo,如果你已有users表或者areas表，可以尝试使用demo进行导出测试，设置`$debug=true;`即可查看导出的耗时和内存占用。
+如果不希望使用查询构造器获取数据，可以在导出类中重写buildData方法
+
+```php
+<?php
+namespace Aoding9\Laravel\Xlswriter\Export\Demo;
+
+use Aoding9\Laravel\Xlswriter\Export\BaseExport;
+
+class UserExportByCollection extends BaseExport {
+    public $header = [
+        ['column' => 'a', 'width' => 8, 'name' => '序号'],
+        ['column' => 'b', 'width' => 8, 'name' => 'id'],
+        ['column' => 'c', 'width' => 10, 'name' => '姓名'],
+        ['column' => 'd', 'width' => 10, 'name' => '性别'],
+        ['column' => 'e', 'width' => 20, 'name' => '注册时间'],
+    
+    ];
+    public $fileName = '用户导出表';   // 导出的文件名
+    public $tableTitle = '用户导出表'; // 第一行标题
+    
+    // 将模型字段与表头关联
+    public function eachRow($row) {
+        /** @var User $row 用于代码提示 */
+        return [
+            $this->index,
+            $row['id'],
+            $row['name'],
+            random_int(0, 1) ? '男' : '女',
+            $row['created_at']->toDateString(),
+        ];
+    }
+
+    public function buildData(?int $page = null, ?int $perPage = null) {
+        //return $this->query->forPage($page, $perPage)->get();
+        return collect([
+                           ['id' => 1, 'name' => '小白', 'created_at' => now()],
+                           ['id' => 2, 'name' => '小红', 'created_at' => now()],
+                       ]);
+    }
+}
+
+```
+
+
+其他：
+
+如果eachRow中需要调用关联模型，请使用with预加载以优化查询。
+
+仓库中包含几个导出类的demo,如果你已有users表或者areas表，可以尝试使用demo进行导出测试，设置`$debug=true;`即可查看导出的耗时和内存占用。
 
 为了方便自定义排版和修改数据，基类属性和方法都为public，方便子类重写
-

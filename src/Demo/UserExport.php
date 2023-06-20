@@ -25,5 +25,5 @@ class UserExport extends BaseExport {
                 $row->created_at->toDateTimeString(),
             ];
     }
-    
+
 }
