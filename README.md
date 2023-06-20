@@ -6,7 +6,7 @@ laravel扩展：xlswriter导出
 
 **chunk=2000,导出1万条**
 
-![](https://cdn.learnku.com/uploads/images/202306/14/78338/pG9P3d6acx.png!large)
+![](https://cdn.learnku.com/uploads/images/202306/20/78338/9j8nZkAr9e.png!large)
 
 **chunk=50000 导出50万条**
 
