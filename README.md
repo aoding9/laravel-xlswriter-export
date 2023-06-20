@@ -16,11 +16,18 @@ laravel扩展：xlswriter导出
 
 ![](https://cdn.learnku.com/uploads/images/202306/15/78338/azHOlbahyX.png!large)
 
-![](https://cdn.learnku.com/uploads/images/202306/08/78338/1EjVb0begV.png!large)
 
-![](https://cdn.learnku.com/uploads/images/202306/08/78338/PKyLtlX9DV.png!large)
+![laravel扩展：xlswriter导出，自定义合并数据单元格，自定义样式、列宽、字体等](https://cdn.learnku.com/uploads/images/202306/20/78338/deiiVL6YiJ.png!large)
 
-**导出类自定义合并，自定义样式**
+
+**自定义组装数据集合**
+
+
+![laravel扩展：xlswriter导出，自定义合并数据单元格，自定义样式、列宽、字体等](https://cdn.learnku.com/uploads/images/202306/20/78338/1ZXkZnOiSn.png!large)
+
+![laravel扩展：xlswriter导出，自定义合并数据单元格，自定义样式、列宽、字体等](https://cdn.learnku.com/uploads/images/202306/20/78338/VNN6bDK7JU.png!large)
+
+**自定义复杂合并及样式**
 
 ![](https://cdn.learnku.com/uploads/images/202306/18/78338/9jAqkuXxSu.png!large)
 
@@ -36,7 +43,7 @@ https://xlswriter-docs.viest.me/
 
 国内composer镜像如果安装失败，请设置官方源
 
-`composer config -g repo.packagist composer https://packagist.org`
+`composer config repo.packagist composer https://packagist.org`
 
 因为官方源下载慢，国内镜像又有各种问题可能导致安装失败，也可以把以下代码添加到composer.json，直接从github安装
 
@@ -89,8 +96,61 @@ class UserExport extends BaseExport {
     }
 }
 ```
+**自定义组装数据集合**
 
-***合并单元格的示例：***
+如果不希望使用查询构造器获取数据，可以在导出类中重写buildData方法
+
+```php
+<?php
+namespace Aoding9\Laravel\Xlswriter\Export\Demo;
+
+use Aoding9\Laravel\Xlswriter\Export\BaseExport;
+
+class UserExportByCollection extends BaseExport {
+    public $header = [
+        ['column' => 'a', 'width' => 8, 'name' => '序号'],
+        ['column' => 'b', 'width' => 8, 'name' => 'id'],
+        ['column' => 'c', 'width' => 10, 'name' => '姓名'],
+        ['column' => 'd', 'width' => 10, 'name' => '性别'],
+        ['column' => 'e', 'width' => 20, 'name' => '注册时间'],
+    
+    ];
+    public $fileName = '用户导出表';   // 导出的文件名
+    public $tableTitle = '用户导出表'; // 第一行标题
+    
+    // 将模型字段与表头关联
+    public function eachRow($row) {
+        /** @var User $row 用于代码提示 */
+        return [
+            $this->index,
+            $row['id'],
+            $row['name'],
+            random_int(0, 1) ? '男' : '女',
+            $row['created_at']->toDateString(),
+        ];
+    }
+
+    public function buildData(?int $page = null, ?int $perPage = null) {
+        //return $this->query->forPage($page, $perPage)->get();
+        return collect([
+                           ['id' => 1, 'name' => '小白', 'created_at' => now()],
+                           ['id' => 2, 'name' => '小红', 'created_at' => now()],
+                       ]);
+    }
+}
+
+```
+
+***复杂合并单元格示例：***
+
+在每个分块插入之前，每行的数据会被绑定一个index值，在每行插入后，会回调`afterInsertEachRowInEachChunk`，在其中可以使用`getCurrentLine`获取当前行数，使用
+`getRowByIndex`获取分块中index对应的rowData
+
+`beforeInsertData`是插入正式数据之前，`setHeaderData`插入表头数据之后的回调，重写setHeaderData可以改变预先定义的表头、标题
+
+`$this->excel`是xlswriter的Excel实例，可以使用`$this->excel->mergeCells`合并单元格，更多样式设置方法请参考官方文档。
+
+`afterInsertData`是所有数据插入完成后的回调，默认在其中调用了`mergeCellsAfterInsertData`方法，合并标题，合并表头，或者对整个表格进行最后修改。
 
 ```php
 <?php
@@ -171,6 +231,10 @@ class UserMergeExport extends BaseExport {
 
 ```
 
+
+
+
+
 2、在控制器中使用
 
 ```php
@@ -193,53 +257,9 @@ public function exportModels() {
 }
 ```
 
-**自定义组装数据集合**
+3、其他：
 
-如果不希望使用查询构造器获取数据，可以在导出类中重写buildData方法
-
-```php
-<?php
-namespace Aoding9\Laravel\Xlswriter\Export\Demo;
-
-use Aoding9\Laravel\Xlswriter\Export\BaseExport;
-
-class UserExportByCollection extends BaseExport {
-    public $header = [
-        ['column' => 'a', 'width' => 8, 'name' => '序号'],
-        ['column' => 'b', 'width' => 8, 'name' => 'id'],
-        ['column' => 'c', 'width' => 10, 'name' => '姓名'],
-        ['column' => 'd', 'width' => 10, 'name' => '性别'],
-        ['column' => 'e', 'width' => 20, 'name' => '注册时间'],
-    
-    ];
-    public $fileName = '用户导出表';   // 导出的文件名
-    public $tableTitle = '用户导出表'; // 第一行标题
-    
-    // 将模型字段与表头关联
-    public function eachRow($row) {
-        /** @var User $row 用于代码提示 */
-        return [
-            $this->index,
-            $row['id'],
-            $row['name'],
-            random_int(0, 1) ? '男' : '女',
-            $row['created_at']->toDateString(),
-        ];
-    }
-
-    public function buildData(?int $page = null, ?int $perPage = null) {
-        //return $this->query->forPage($page, $perPage)->get();
-        return collect([
-                           ['id' => 1, 'name' => '小白', 'created_at' => now()],
-                           ['id' => 2, 'name' => '小红', 'created_at' => now()],
-                       ]);
-    }
-}
-
-```
-
-
-其他：
+合并单元格的范围请使用大写字母，小写字母会报错。
 
 如果eachRow中需要调用关联模型，请使用with预加载以优化查询。
 
