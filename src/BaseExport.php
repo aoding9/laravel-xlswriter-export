@@ -553,8 +553,8 @@ abstract class BaseExport {
     
     /**
      * Get data with export query.
-     * @param int $page
-     * @param int $perPage
+     * @param int $page 第几个分块
+     * @param int $perPage 分块大小
      * @return Collection
      */
     public function buildData(?int $page = null, ?int $perPage = null) {
@@ -562,7 +562,7 @@ abstract class BaseExport {
     }
     
     /**
-     * Create a grid instance.
+     * Create a instance.
      * @param mixed ...$params
      * @return $this
      */
