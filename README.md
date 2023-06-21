@@ -22,7 +22,7 @@ laravel扩展：xlswriter导出
 ![laravel扩展：xlswriter导出，自定义复杂合并及样式](https://cdn.learnku.com/uploads/images/202306/21/78338/9Dz0wi42rl.png!large)
 
 
-**自定义组装数据集合**
+**自定义组装数据集合（2种方法）**
 
 
 ![laravel扩展：xlswriter导出，自定义复杂合并及样式](https://cdn.learnku.com/uploads/images/202306/21/78338/BaobtwVQlL.png!large)
@@ -355,26 +355,15 @@ public function exportModels() {
 	$time =microtime(true);
 
 	// 用查询构造器
-	$query=\App\Models\Area::where('area_code',0); // 查父级为0的地区，即查省份
+	$query=\App\Models\Area::where('parent_code',0); // 查父级为0的地区，即查省份
 	\Aoding9\Laravel\Xlswriter\Export\Demo\AreaExport::make($query,$time)->export();
 
 	// 用数组或集合
-	// 数据量大时，需要修改内存上限，不推荐
+	// 数据量大时占用很高，需要修改内存上限，不推荐
 	ini_set('memory_limit', '2048M');
 	set_time_limit(0);
 	\Aoding9\Laravel\Xlswriter\Export\Demo\AreaExportFromCollection::make(\App\Models\Area::query()->limit(500000)->get(),$time)->export();
 }
-```
-
-```
-      $time =microtime(true);
-
-        // $query=\App\Models\Area::query();
-        // \Aoding9\Laravel\Xlswriter\Export\Demo\AreaExport::make($query,$time)->export();
-
-        ini_set('memory_limit', '2048M');
-        set_time_limit(0);
-        \Aoding9\Laravel\Xlswriter\Export\Demo\AreaExportFromCollection::make(\App\Models\Area::query()->limit(500000)->get(),$time)->export();
 ```
 
 3、其他：
