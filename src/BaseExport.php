@@ -35,6 +35,15 @@ abstract class BaseExport {
         return realpath(sys_get_temp_dir());
     }
     
+    /**
+     * @Desc 导出文件的保存路径
+     * @return string
+     * @Date 2023/6/21 21:34
+     */
+    public function getStoreFilePath() {
+        return $this->getTmpDir() . '/';
+    }
+    
     public function setFilename($filename) {
         $this->fileName = $filename . Date('YmdHis') . '.xlsx';
         return $this;
@@ -56,14 +65,37 @@ abstract class BaseExport {
         return $this->data;
     }
     
+    public function getChunkData() {
+        return $this->chunkData;
+    }
+    
     public $index;
+    public $dataSourceType;
+    
+    /**
+     * @Desc 初始化数据源，判断数据源的类型
+     * @param array|Collection|Builder $dataSource
+     * @return $this
+     * @Date 2023/6/21 22:02
+     */
+    public function initDataSource($dataSource) {
+        if ($dataSource instanceof Builder) {
+            $this->dataSourceType = 'query';
+            $this->setQuery($dataSource);
+            $dataSource = [];
+        } else if (is_array($dataSource) || $dataSource instanceof Collection) {
+            $this->dataSourceType = 'collection';
+        }
+        $this->setData($dataSource);
+        $this->index = 1;
+        return $this;
+    }
     
     public function setData($data) {
         if (!$data instanceof Collection) {
             $data = collect($data);
         }
         $this->data = $data;
-        $this->index = 1;
         
         return $this;
     }
@@ -75,6 +107,9 @@ abstract class BaseExport {
     public $headerRowHeight = 40;
     public $titleRowHeight = 50;
     public $filePath;
+    /**
+     * @var Excel $excel
+     */
     public $excel;
     public $headerLen;
     public $end;
@@ -94,18 +129,54 @@ abstract class BaseExport {
     
     public $query;
     
-    public function __construct(?Builder $query = null) {
-        $this->init($query);
+    /**
+     * BaseExport constructor.
+     * @param Builder|array|Collection|null $dataSource
+     */
+    public function __construct($dataSource, $time = null) {
+        if ($this->debug) {
+            $this->time = $time ?? microtime(true);
+            dump('开始内存占用：' . memory_get_peak_usage() / 1024000);
+        }
+        $this->init($dataSource);
     }
     
-    public function init($query) {
+    public $config;
+    
+    public function setConfig($config = null) {
+        $this->config = ['path' => $this->getStoreFilePath()];
+        return $this;
+    }
+    
+    public function setQuery($query) {
         $this->query = $query;
-        $config = ['path' => $this->getTmpDir() . '/'];
+        return $this;
+    }
+    
+    public function getFinalFileName() {
+        return $this->setFilename($this->fileName)->getFilename();
+    }
+    
+    public $sheetName = 'Sheet1';
+    
+    public function setSheet($name) {
+        $this->sheetName = $name;
+        return $this;
+    }
+    
+    public function newExcel($config) {
+        $this->setExcel(new Excel($config));
+        return $this;
+    }
+    
+    public function init($dataSource = null) {
+        $this->setConfig()
+             ->initDataSource($dataSource)
+             ->newExcel($this->config)
+            ->excel
+            ->fileName($this->getFinalFileName(), $this->sheetName);
         
-        $fileName = $this->setFilename($this->fileName)->getFilename();
-        $sheetName = 'Sheet1';
-        $excel = (new Excel($config))->fileName($fileName, $sheetName);
-        $this->setExcel($excel);
+        return $this;
     }
     
     public function setExcel(Excel $excel) {
@@ -118,15 +189,15 @@ abstract class BaseExport {
     }
     
     public function freezePanes(int $row = 2, int $column = 0) {
-        return $this->excel->freezePanes($row, $column);        // 冻结前两行，列不冻结
+        if ($this->useFreezePanes) {
+            $this->excel->freezePanes($row, $column);        // 冻结前两行，列不冻结
+        }
+        return $this;
     }
     
     public $useFreezePanes = true;
     
     public function beforeInsertData() {
-        if ($this->useFreezePanes) {
-            $this->freezePanes();        // 冻结前两行，列不冻结
-        }
         return $this;
     }
     
@@ -161,6 +232,7 @@ abstract class BaseExport {
                 ->toResource();
     }
     
+    public $useGlobalStyle = false;
     public $globalStyle;
     
     public function setGlobalStyle() {
@@ -169,12 +241,23 @@ abstract class BaseExport {
             ->fontSize(10)
             ->font($this->fontFamily)
             ->align(Format::FORMAT_ALIGN_CENTER, Format::FORMAT_ALIGN_VERTICAL_CENTER)
+            ->border(Format::PATTERN_NONE)
+            ->wrap()
+            ->toResource();
+        $this->excel->defaultFormat($this->globalStyle); // 默认样式
+        return $this;
+    }
+    
+    public $normalStyle;
+    
+    public function getNormalStyle() {
+        return $this->normalStyle ?: $this->normalStyle = (new Format($this->fileHandle))
+            ->fontSize(10)
+            ->font($this->fontFamily)
+            ->align(Format::FORMAT_ALIGN_CENTER, Format::FORMAT_ALIGN_VERTICAL_CENTER)
             ->border(Format::BORDER_THIN)
             ->wrap()
             ->toResource();
-        return $this;
-        // $this->excel = $this->excel->defaultFormat($globalStyle); // 默认样式
-        
     }
     
     public function setColumnStyle() {
@@ -183,13 +266,20 @@ abstract class BaseExport {
         // 设置列宽 以及默认样式
         foreach ($this->columnWidths as $k => $columnWidth) {
             $column = $this->getColumn($k);
-            $this->excel->setColumn($column . ':' . $column, $columnWidth, $this->globalStyle);
+            if ($this->useGlobalStyle) {
+                $this->excel->setColumn($column . ':' . $column, $columnWidth);
+            } else {
+                $this->excel->setColumn($column . ':' . $column, $columnWidth, $this->getNormalStyle());
+            }
+    
         }
     }
     
     // 开始插入数据
     public function startInsertData() {
-        $this->setGlobalStyle();
+        if ($this->useGlobalStyle) {
+            $this->setGlobalStyle();
+        }
         $this->setTitleStyle();
         $this->setHeaderStyle();
         $this->setColumnStyle();
@@ -199,6 +289,7 @@ abstract class BaseExport {
                                ->chunk(function(int $times, $perPage) {
                                    return $this->buildData($times, $perPage);
                                });
+        unset($this->data);
         
         return $this;
     }
@@ -206,36 +297,39 @@ abstract class BaseExport {
     public function afterStore() {
     }
     
-    public function initData() {
-        set_time_limit(0);
-        $this->setData([]);
-        
-        return $this->getData();
-    }
-    
     public $fileHandle;
     public $columnWidths;
     
-    public function store() {
-        $this->fileHandle = $this->excel->getHandle();
-        
-        $this->headerLen = count($this->getHeader());
-        $this->end = $this->getColumn($this->headerLen - 1);
-        
-        $this->initData();
-        
-        $this->setHeaderData();
-        
-        $this->beforeInsertData();
-        
-        // 数据填充，输出
-        $this->startInsertData();
-        
-        $this->afterInsertData();
-        
-        $this->filePath = $this->output();
-        
+    public function setEnd($end = null) {
+        $this->end = $end ?? $this->getColumn($this->headerLen - 1);
         return $this;
+    }
+    
+    public function setHeaderLen($headerLen = null) {
+        $this->headerLen = $headerLen ?? count($this->getHeader());
+        return $this;
+    }
+    
+    public function setFileHandle($fileHandle = null) {
+        $this->fileHandle = $fileHandle ?? $this->excel->getHandle();
+        return $this;
+    }
+    
+    public function setFilePath($filePath = null) {
+        $this->filePath = $filePath ?? $this->output();
+        return $this;
+    }
+    
+    public function store() {
+        return $this->setFileHandle()  // 设置文件处理对象
+                    ->freezePanes()       // 冻结前两行，列不冻结
+                    ->setHeaderLen() // 设置最大列数
+                    ->setEnd() // 设置末尾的列名
+                    ->setHeaderData() // 设置表头数据
+                    ->beforeInsertData() // 插入正式数据前回调
+                    ->startInsertData() // 开始插入数据
+                    ->afterInsertData() // 插入数据完成回调
+                    ->setFilePath(); // 输出文件到临时目录，并设置文件地址
     }
     
     /**
@@ -299,26 +393,31 @@ abstract class BaseExport {
      * @return mixed
      * @Date 2023/6/14 22:38
      */
-    public function getRowByIndex($index) {
-        return $this->data->where('index', $index)->first();
+    public function getRowInChunkByIndex($index) {
+        return $this->chunkData->where('index', $index)->first();
     }
     
-    public function insertNormalData(Collection $data) {
-        $this->data = $data;
-        $index = $this->index;
+    /**
+     * @var Collection $chunkData 分块数据
+     */
+    public $chunkData;
+    
+    public function insertChunkData(Collection $data) {
+        $this->chunkData = $data;
+        $index = $this->getIndex();
         
         // 给每行数据绑定index
-        foreach ($this->data as $k => $rowData) {
+        foreach ($this->chunkData as $k => $rowData) {
             if ($rowData instanceof Model) {
                 $rowData->index = $index;
             } else {
                 $rowData['index'] = $index;
-                $this->data->put($k, $rowData);
+                $this->chunkData->put($k, $rowData);
             }
             $index++;
         }
         
-        foreach ($this->data as $rowData) {
+        foreach ($this->chunkData as $rowData) {
             $this->setRowHeight();
             
             $rowArray = $this->eachRow($rowData);
@@ -327,14 +426,14 @@ abstract class BaseExport {
                 $this->insertCell($this->currentLine, $column, $columnData);
             }
             
-            // 行插入后回调，$this->data是分块数据，绑定了index，$this->getCurrentLine()获取当前行数，$this->getRowByIndex($this->index）获取该行数据。
+            // 行插入后回调，$this->chunkData是分块数据，绑定了index，$this->getCurrentLine()获取当前行数，$this->getRowByIndex($this->index）获取该行数据。
             $this->afterInsertEachRowInEachChunk($rowData);
             
             $this->index++;
             $this->currentLine++;
         }
         
-        unset($this->data, $rowArray, $rowData, $column, $columnData);
+        unset($rowArray, $column);
         
         return $this;
     }
@@ -347,18 +446,29 @@ abstract class BaseExport {
     public function afterInsertEachRowInEachChunk($rowData) {
     }
     
+    public function getCellName(int $currentLine, int $column) {
+        return $this->getColumn($column) . $currentLine;
+    }
+    
+    public function insertCellHandle($currentLine, $column, $data, $format, $formatHandle) {
+        return $this->excel->insertText($currentLine, $column, $data, $format, $formatHandle);
+    }
+    
     /**
      * Insert data on the cell
      * @param int               $currentLine
      * @param int               $column
-     * @param int|string|double $columnData
+     * @param int|string|double $data
      * @param string|null       $format
      * @param resource|null     $formatHandle
      * @return Excel
      */
-    public function insertCell(int $currentLine, int $column, $columnData, $format = null, $formatHandle = null) {
+    public function insertCell(int $currentLine, int $column, $data, ?string $format = null, $formatHandle = null) {
         try {
-            return $this->excel->insertText($currentLine, $column, $columnData, $format, $formatHandle);
+            if ($this->useGlobalStyle) {
+                $formatHandle = $formatHandle ?? $this->getNormalStyle();
+            }
+            return $this->insertCellHandle($currentLine, $column, $data, $format, $formatHandle);
         } catch (Exception $e) {
             throw new Exception('行数为' . $this->getCurrentLine() . '的记录导出失败，原因：' . $e->getMessage());
         }
@@ -384,6 +494,11 @@ abstract class BaseExport {
                 $this->excel->mergeCells($i['range'], $i['value'], $i['formatHandle'] ?? null);
             }
         }
+        if ($this->debug) {
+            dump('触发afterInsertData-耗时' . (number_format(microtime(true) - $this->time, 2)) . '秒' . "-" . '内存：' . memory_get_peak_usage() / 1024000);
+            dd('数据插入已完成');
+        }
+        return $this;
     }
     
     public function beforeOutput() {
@@ -524,13 +639,12 @@ abstract class BaseExport {
         return $this;
     }
     
+    public $time;
+    
     public function chunk($callback = null) {
         $times = 1;
         $this->completed = 0;
-        if ($this->debug) {
-            $start = microtime(true);
-            dump('开始内存占用：' . memory_get_peak_usage() / 1024000);
-        }
+        
         do {
             /** @var Collection $result */
             $result = $callback($times, $this->chunkSize);
@@ -538,27 +652,40 @@ abstract class BaseExport {
             $count = count($result);
             $this->completed += $count;
             // dd($times,$result,$count);
-            $this->insertNormalData($result);
-            unset($result);
+            $this->insertChunkData($result);
+            unset($this->chunkData, $result);
             if ($this->debug) {
-                dump('已导出：' . $this->completed . '条，耗时' . (number_format(microtime(true) - $start, 2)) . '秒' . "-" . '内存：' . memory_get_peak_usage() / 1024000);
+                dump('已导出：' . $this->completed . '条，耗时' . (number_format(microtime(true) - $this->time, 2)) . '秒' . "-" . '内存：' . memory_get_peak_usage() / 1024000);
             }
             $times++;
         } while ($count === $this->chunkSize && $this->completed < $this->max);
-        if ($this->debug) {
-            dd('数据插入完成');
-        }
+        
         return $this;
     }
     
     /**
      * Get data with export query.
-     * @param int $page 第几个分块
+     * @param int $page    第几个分块
      * @param int $perPage 分块大小
      * @return Collection
      */
     public function buildData(?int $page = null, ?int $perPage = null) {
+        switch ($this->dataSourceType) {
+            case 'query':
+                return $this->buildDataFromQuery($page, $perPage);
+            case 'collection':
+                return $this->buildDataFromCollection($page, $perPage);
+            default :
+                throw new Exception('无效的数据源类型');
+        }
+    }
+    
+    public function buildDataFromQuery(?int $page = null, ?int $perPage = null) {
         return $this->query->forPage($page, $perPage)->get();
+    }
+    
+    public function buildDataFromCollection(?int $page = null, ?int $perPage = null) {
+        return $this->data->forPage($page, $perPage);
     }
     
     /**
