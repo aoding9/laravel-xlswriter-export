@@ -1,6 +1,3 @@
-先放个效果，最后有介绍如何定义类似这样的导出表
-![](https://cdn.learnku.com/uploads/images/202306/21/78338/3EGobTIbWm.png!large)
-
 ### 简介
 
 laravel扩展：xlswriter导出
