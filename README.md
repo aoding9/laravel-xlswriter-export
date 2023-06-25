@@ -1,10 +1,13 @@
+先放个效果，最后有介绍如何定义类似这样的导出表
+![](https://cdn.learnku.com/uploads/images/202306/21/78338/3EGobTIbWm.png!large)
+
 ### 简介
 
-laravel 扩展：xlswriter 导出
+laravel扩展：xlswriter导出
 
-之前用了 laravel-excel 做数据导出，太耗内存速度也慢，数据量大的时候内存占用容易达到 php 上限，或者响应超时，换成 xlswriter 这个扩展来做。
+之前用了laravel-excel做数据导出，太耗内存速度也慢，数据量大的时候内存占用容易达到php上限，或者响应超时，换成xlswriter这个扩展来做。
 
-由于 xlswriter 直接导出的表格不够美观，在实际使用中，往往需要合并单元格和自定义表格样式等，我进行了一些封装，使用更加方便简洁，定义表头和数据的方式也更加直观。
+由于xlswriter直接导出的表格不够美观，在实际使用中，往往需要合并单元格和自定义表格样式等，我进行了一些封装，使用更加方便简洁，定义表头和数据的方式也更加直观。
 
 ### 导出时间和内存占用情况
 
@@ -17,6 +20,7 @@ laravel 扩展：xlswriter 导出
 **chunk=50000 导出50万条**
 
 ![laravel扩展：xlswriter导出，自定义复杂合并及样式](https://cdn.learnku.com/uploads/images/202306/21/78338/4Vt41lzmc6.png!large)
+
 
 ### 效果示例
 
@@ -54,11 +58,11 @@ laravel 扩展：xlswriter 导出
 
 `composer require aoding9/laravel-xlswriter-export`
 
-国内composer镜像如果安装失败，请设置官方源
+若国内composer镜像安装失败，请设置官方源
 
 `composer config repo.packagist composer https://packagist.org`
 
-因为官方源下载慢，国内镜像又有各种问题可能导致安装失败，也可以把以下代码添加到composer.json，直接从github安装
+由于官方源下载慢，国内镜像又有各种问题可能导致安装失败，也可以把以下代码添加到composer.json，直接从github安装
 
 ```json
 {
@@ -77,13 +81,19 @@ laravel 扩展：xlswriter 导出
 
 ### 使用
 
-1、以用户导出为例，首先创建一个UserExport导出类，继承`Aoding9\Laravel\Xlswriter\Export\BaseExport`基类，一般放在app\Exports目录下
+#### 1.定义导出类
 
-`$header`中，column是列名，按abcd顺序排列，仅作为标识不参与实际导出，列很多时方便一眼看出列名，防止写错位，width是列宽度，name是填充的表头值。
+##### 简单导出
 
-若要合并表头，需定义最细分的列以设置每一列的宽度，合并列在另外的方法中去处理。
+使用预定义的格式进行导出，最少只需定义表头和数据到列的关联，即可导出一个比较美观的表格。
 
-`/** @var \App\Models\User $row */`告诉编辑器$row可能是User模型，输入`$row->`弹出模型的属性，需要配合`barryvdh/laravel-ide-helper`扩展生成`_ide_helper_models.php`文件，方便开发，可用可不用
+以用户导出为例，首先创建一个UserExport导出类，继承`Aoding9\Laravel\Xlswriter\Export\BaseExport`基类，一般放在app\Exports目录下
+
+`$header`中，column是列名，按abcd顺序排列，仅作为标识不参与实际导出，列很多时方便一眼看出列名，防止写错位，width是列宽，name是填充的表头文本。
+
+若要合并表头，需定义最细分的列以指明每一列的宽度，合并列在另外的方法中去处理。
+
+`/** @var \App\Models\User $row */`告诉编辑器$row可能是User模型，输入`$row->`弹出模型的属性提示，需要配合`barryvdh/laravel-ide-helper`扩展生成`_ide_helper_models.php`文件，方便开发，可用可不用
 
 ```php
 <?php
@@ -105,7 +115,7 @@ class UserExport extends BaseExport {
     
     // 将模型字段与表头关联
     public function eachRow($row) {
-    	/** @var \App\Models\User $row */
+		/** @var \App\Models\User $row */
         return [
             $this->index,
             $row->id,
@@ -117,13 +127,14 @@ class UserExport extends BaseExport {
 }
 
 ```
-**使用自定义的数组或集合**
+##### 使用自定义的数组或集合
 
 如果不希望使用查询构造器获取数据，比如从接口获取数据，有2种方式使用自己定义的数据集合。
 
 > 注意: 如果数据是普通数组或集合，而非ORM模型集合，那么eachRow中不能直接用`$row->id`获取数据，应该使用`$row['id']`
 
-1、将集合或数组传给构造函数，弊端是需要传入全部数据，无法分块；好处是写法简单，数据在外部定义，适合数据量小的导出
+方式1、将集合或数组传给构造函数，弊端是需要传入全部数据，无法分块；好处是写法简单，数据在外部定义，适合数据量小的导出
+
 ```php
        $data = [
             ['id' => 1, 'name' => '小白', 'created_at' => now()->toDateString()],
@@ -135,15 +146,16 @@ class UserExport extends BaseExport {
 		\Aoding9\Laravel\Xlswriter\Export\Demo\AreaExportFromCollection::make(\App\Models\Area::query()->limit(500000)->get())->export();
 ```
 
-**不使用分页获取，直接导50万条数据的集合，因为要保存全部的数据，所以内存占用极高**
+**不使用分页获取，直接导50万条数据的集合，因为要一次保存全部数据，所以内存占用极高**
 
 ![laravel扩展：xlswriter导出，自定义复杂合并及样式](https://cdn.learnku.com/uploads/images/202306/21/78338/cXSEyYQNwb.png!large)
 
-2、构造函数传参留空，在导出类中重写buildData方法，分页返回集合，适合数据量大的情况
+方式2、构造函数传参留空，在导出类中重写buildData方法，分页返回集合，适合数据量大的情况
 
 ```php
  \Aoding9\Laravel\Xlswriter\Export\Demo\UserExportFromCollection::make()->export();
-
+```
+```php
 <?php
 namespace Aoding9\Laravel\Xlswriter\Export\Demo;
 
@@ -183,7 +195,7 @@ class UserExportFromCollection extends BaseExport {
 
 ```
 
-***复杂合并单元格，指定单元格样式***
+##### 复杂合并单元格，指定单元格样式
 
 在每个分块插入之前，每行的数据会被绑定一个index值，在每行插入后，会回调`afterInsertEachRowInEachChunk`，在其中可以使用`getCurrentLine`获取当前行数，使用
 `getRowByIndex`获取分块中index对应的rowData
@@ -204,11 +216,8 @@ class UserExportFromCollection extends BaseExport {
 namespace Aoding9\Laravel\Xlswriter\Export\Demo;
 
 use Aoding9\Laravel\Xlswriter\Export\BaseExport;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Vtiful\Kernel\Format;
-
-// 要导出的模型，用于代码提示
 
 class UserMergeExport extends BaseExport {
     public $header = [
@@ -339,13 +348,12 @@ class UserMergeExport extends BaseExport {
 
 
 
-
-2、在控制器中使用
+#### 2、在控制器中使用
 
 ```php
 public function exportModels() {
     // 定义查询构造器，设置查询条件，如果有关联关系，使用with预加载以优化查询
-    $query=\Aoding9\Laravel\Xlswriter\Export\Demo\User::query();
+    $query=\App\Models\User::query();
     
     // 将查询构造器传入构造函数，然后调用export即可触发下载 
     \Aoding9\Laravel\Xlswriter\Export\Demo\UserExport::make($query)->export();
@@ -359,14 +367,14 @@ public function exportModels() {
             	['id' => 1, 'name' => '小白', 'created_at' => now()->toDateString()],
             	['id' => 2, 'name' => '小红', 'created_at' => now()->toDateString()],
     ];
-	// $data = User::get()->toArray();
+	// $data = \App\Models\User::get()->toArray();
 	\Aoding9\Laravel\Xlswriter\Export\Demo\UserExportFromCollection::make($data)->export();
 	
 	// 方式2：无需传参给构造函数，但需要重写buildData方法，分块返回数据
 	\Aoding9\Laravel\Xlswriter\Export\Demo\UserExportByCollection::make()->export();
     
     // 地区导出的demo
-	// 用于调试模式查看运行耗时
+	// 用于调试模式查看运行耗时，包含数据查询耗费的时间
 	$time =microtime(true);
 
 	// 用查询构造器
@@ -377,16 +385,27 @@ public function exportModels() {
 	// 数据量大时占用很高，需要修改内存上限，不推荐
 	ini_set('memory_limit', '2048M');
 	set_time_limit(0);
-	\Aoding9\Laravel\Xlswriter\Export\Demo\AreaExportFromCollection::make(\App\Models\Area::query()->limit(500000)->get(),$time)->export();
+	$data =\App\Models\Area::query()->limit(500000)->get();
+	\Aoding9\Laravel\Xlswriter\Export\Demo\AreaExportFromCollection::make($data,$time)->export();
 }
 ```
 
-3、其他：
+### 其他
 
 合并单元格的范围请使用大写字母，小写字母会报错。
 
 如果eachRow中需要调用关联模型，请使用with预加载以优化查询。
 
-仓库中包含几个导出类的demo,如果你已有users表或者areas表，可以尝试使用demo进行导出测试，设置`$debug=true;`即可查看导出的耗时和内存占用。
+仓库中包含几个导出类的demo,如果你已有users表或者areas表，可以尝试使用demo进行导出测试
 
 为了方便自定义排版和修改数据，基类属性和方法都为public，方便子类重写
+
+#### 方法补充
+`setMax()` 设置最大导出的数据量
+`setChunkSize()`设置每个分块的数据量
+`setDebug()`设置是否开启调试，查看导出的耗时和内存占用
+`setDebug()`设置是否开启调试，查看导出的耗时和内存占用
+`useFreezePanes()`是否启用表格冻结功能
+`freezePanes()`设置表格冻结的行列
+
+更多方法详见BaseExport，注释非常详细
