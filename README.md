@@ -202,7 +202,7 @@ class UserExportFromCollection extends BaseExport {
 
 `setHeaderData` 设置表头数据，重写可修改预定义的表头、标题等
 
-`$this->excel`是xlswriter的Excel实例，可以使用`$this->excel->mergeCells`合并单元格，更多样式设置方法请参考官方文档。
+`$this->excel`是xlswriter的Excel实例，可以使用`$this->excel->mergeCells`合并单元格，此时可以指定自定义样式，样式设置方法请参考官方文档。
 
 `afterInsertData`是所有数据插入完成后的回调，默认在其中调用了`mergeCellsAfterInsertData`方法，合并标题，合并表头，或者对整个表格进行最后修改。
 
@@ -401,10 +401,15 @@ public function exportModels() {
 为了方便自定义排版和修改数据，基类属性和方法都为public，方便子类重写
 
 #### 方法补充
+
 `setMax()` 设置最大导出的数据量
+
 `setChunkSize()`设置每个分块的数据量
+
 `setDebug()`设置是否开启调试，查看导出的耗时和内存占用
+
 `useFreezePanes()`是否启用表格冻结功能
+
 `freezePanes()`设置表格冻结的行列
 
 更多方法详见BaseExport，注释非常详细
