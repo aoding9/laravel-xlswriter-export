@@ -188,6 +188,13 @@ abstract class BaseExport {
         return $this->excel;
     }
     
+    /**
+     * @Desc 设置表格冻结
+     * @param int $row
+     * @param int $column
+     * @return $this
+     * @Date 2023/6/25 17:59
+     */
     public function freezePanes(int $row = 2, int $column = 0) {
         if ($this->useFreezePanes) {
             $this->excel->freezePanes($row, $column);        // 冻结前两行，列不冻结
@@ -195,7 +202,12 @@ abstract class BaseExport {
         return $this;
     }
     
-    public $useFreezePanes = true;
+    public $useFreezePanes = false;
+    
+    public function useFreezePanes(){
+        $this->useFreezePanes=true;
+        return $this;
+    }
     
     public function beforeInsertData() {
         return $this;
