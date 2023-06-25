@@ -1,8 +1,10 @@
 ### 简介
 
-laravel扩展：xlswriter导出
+laravel 扩展：xlswriter 导出
 
-之前用了laravel-excel做数据导出，太耗内存速度也慢，数据量大的时候内存占用容易达到php上限，或者响应超时，换成xlswriter这个扩展来做。
+之前用了 laravel-excel 做数据导出，太耗内存速度也慢，数据量大的时候内存占用容易达到 php 上限，或者响应超时，换成 xlswriter 这个扩展来做。
+
+由于 xlswriter 直接导出的表格不够美观，在实际使用中，往往需要合并单元格和自定义表格样式等，我进行了一些封装，使用更加方便简洁，定义表头和数据的方式也更加直观。
 
 **chunk=2000,导出1万条**
 
@@ -73,6 +75,12 @@ https://xlswriter-docs.viest.me/
 
 1、以用户导出为例，首先创建一个UserExport导出类，继承`Aoding9\Laravel\Xlswriter\Export\BaseExport`基类，一般放在app\Exports目录下
 
+`$header`中，column是列名，按abcd顺序排列，仅作为标识不参与实际导出，列很多时方便一眼看出列名，防止写错位，width是列宽度，name是填充的表头值。
+
+若要合并表头，需定义最细分的列以设置每一列的宽度，合并列在另外的方法中去处理。
+
+`/** @var \App\Models\User $row */`告诉编辑器$row可能是User模型，输入`$row->`弹出模型的属性，需要配合`barryvdh/laravel-ide-helper`扩展生成`_ide_helper_models.php`文件，方便开发，可用可不用
+
 ```php
 <?php
 namespace Aoding9\Laravel\Xlswriter\Export\Demo;
@@ -93,6 +101,7 @@ class UserExport extends BaseExport {
     
     // 将模型字段与表头关联
     public function eachRow($row) {
+    	/** @var \App\Models\User $row */
         return [
             $this->index,
             $row->id,
