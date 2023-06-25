@@ -6,6 +6,10 @@ laravel 扩展：xlswriter 导出
 
 由于 xlswriter 直接导出的表格不够美观，在实际使用中，往往需要合并单元格和自定义表格样式等，我进行了一些封装，使用更加方便简洁，定义表头和数据的方式也更加直观。
 
+### 导出时间和内存占用情况
+
+以下测试使用了扩展中的Demo`Aoding9\Laravel\Xlswriter\Export\Demo\AreaExport`导出areas地区表，使用分页查询，包括了数据查询的时间。
+
 **chunk=2000,导出1万条**
 
 ![laravel扩展：xlswriter导出，自定义复杂合并及样式](https://cdn.learnku.com/uploads/images/202306/21/78338/2ByrnkgGCh.png!large)
@@ -14,7 +18,7 @@ laravel 扩展：xlswriter 导出
 
 ![laravel扩展：xlswriter导出，自定义复杂合并及样式](https://cdn.learnku.com/uploads/images/202306/21/78338/4Vt41lzmc6.png!large)
 
-
+### 效果示例
 
 **导出类简单示例**
 
@@ -42,11 +46,11 @@ laravel 扩展：xlswriter 导出
 
 ### 安装
 
-首先根据xlswriter文档安装扩展
+首先根据xlswriter文档安装扩展，windows可以下载对应php版本的dll文件，linux可以源码编译安装，或者pecl安装
 
-https://xlswriter-docs.viest.me/
+官方文档：https://xlswriter-docs.viest.me/
 
-在phpinfo中确认安装成功后，进行下一步
+修改php.ini后，在phpinfo中确认是否安装成功，然后进行下一步
 
 `composer require aoding9/laravel-xlswriter-export`
 
