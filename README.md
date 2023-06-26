@@ -1,4 +1,4 @@
-### 简介
+## 简介
 
 laravel扩展：xlswriter导出
 
@@ -6,7 +6,7 @@ laravel扩展：xlswriter导出
 
 由于xlswriter直接导出的表格不够美观，在实际使用中，往往需要合并单元格和自定义表格样式等，我进行了一些封装，使用更加方便简洁，定义表头和数据的方式也更加直观。
 
-### 导出时间和内存占用情况
+## 导出时间和内存占用情况
 
 以下测试使用了扩展中的Demo`Aoding9\Laravel\Xlswriter\Export\Demo\AreaExport`导出areas地区表，使用分页查询，包括了数据查询的时间。
 
@@ -19,7 +19,7 @@ laravel扩展：xlswriter导出
 ![laravel扩展：xlswriter导出，自定义复杂合并及样式](https://cdn.learnku.com/uploads/images/202306/21/78338/4Vt41lzmc6.png!large)
 
 
-### 效果示例
+## 效果示例
 
 **导出类简单示例**
 
@@ -41,11 +41,10 @@ laravel扩展：xlswriter导出
 
 **复杂合并及指定单元格样式**
 
+![laravel扩展：xlswriter导出，自定义复杂合并及样式](https://cdn.learnku.com/uploads/images/202306/26/78338/nkWlNbkX2S.png!large)
 
-![laravel扩展：xlswriter导出，自定义复杂合并及样式](https://cdn.learnku.com/uploads/images/202306/21/78338/3EGobTIbWm.png!large)
 
-
-### 安装
+## 安装
 
 首先根据xlswriter文档安装扩展，windows可以下载对应php版本的dll文件，linux可以源码编译安装，或者pecl安装
 
@@ -72,15 +71,15 @@ laravel扩展：xlswriter导出
 }
 ```
 
-### 配置
+## 配置
 
-暂无配置
+在导出类中定义BaseExport的相关属性实现配置，或者在make之后调用相关属性的set方法
 
-### 使用
+## 使用
 
-#### 1.定义导出类
+### 1.定义导出类
 
-##### 简单导出
+#### 简单导出
 
 使用预定义的格式进行导出，最少只需定义表头和数据到列的关联，即可导出一个比较美观的表格。
 
@@ -124,7 +123,7 @@ class UserExport extends BaseExport {
 }
 
 ```
-##### 使用自定义的数组或集合
+#### 使用自定义的数组或集合
 
 如果不希望使用查询构造器获取数据，比如从接口获取数据，有2种方式使用自己定义的数据集合。
 
@@ -192,7 +191,7 @@ class UserExportFromCollection extends BaseExport {
 
 ```
 
-##### 复杂合并单元格，指定单元格样式
+#### 复杂合并单元格，指定单元格样式
 
 在每个分块插入之前，每行的数据会被绑定一个index值，在每行插入后，会回调`afterInsertEachRowInEachChunk`，在其中可以使用`getCurrentLine`获取当前行数，使用
 `getRowByIndex`获取分块中index对应的rowData
@@ -292,9 +291,9 @@ class UserMergeExport extends BaseExport {
             ['range' => "C2:E2", 'value' => '基本资料', 'formatHandle' => $this->getSpecialStyle()],
         ];
     }
-    
+
     public $specialStyle;
-    
+
     /**
      * 定义个特别的表格样式
      * @return resource
@@ -312,9 +311,7 @@ class UserMergeExport extends BaseExport {
     }
     
     // public $specialStyle2;
-    // public $specialStyle3;
     // public function getSpecialStyle2() {}
-    // public function getSpecialStyle3() {}
     
     /**
      * @Desc 重写插入单元格数据的处理方法，可单独设置某个单元格的样式
@@ -324,7 +321,6 @@ class UserMergeExport extends BaseExport {
      * @param string|null   $format       数据格式化
      * @param resource|null $formatHandle 表格样式
      * @return \Vtiful\Kernel\Excel
-     * @Date 2023/6/21 23:37
      */
     public function insertCellHandle($currentLine, $column, $data, $format, $formatHandle) {
         // if($this->getCellName($currentLine,$column)==='A4'){ ... } // 根据单元格名称判断
@@ -345,18 +341,22 @@ class UserMergeExport extends BaseExport {
 
 
 
-#### 2、在控制器中使用
+### 2、在控制器中使用
 
 ```php
 public function exportModels() {
+
     // 定义查询构造器，设置查询条件，如果有关联关系，使用with预加载以优化查询
     $query=\App\Models\User::query();
     
+	
     // 将查询构造器传入构造函数，然后调用export即可触发下载 
     \Aoding9\Laravel\Xlswriter\Export\Demo\UserExport::make($query)->export();
-    
+   
+   
     // 合并单元格的demo
     \Aoding9\Laravel\Xlswriter\Export\Demo\UserMergeExport::make($query)->export();
+	
 	
 	// 用数据集合或数组
 	// 方式1：如果给构造函数传数组或集合，必须把数据全部传入
@@ -367,16 +367,20 @@ public function exportModels() {
 	// $data = \App\Models\User::get()->toArray();
 	\Aoding9\Laravel\Xlswriter\Export\Demo\UserExportFromCollection::make($data)->export();
 	
+
 	// 方式2：无需传参给构造函数，但需要重写buildData方法，分块返回数据
 	\Aoding9\Laravel\Xlswriter\Export\Demo\UserExportByCollection::make()->export();
     
+	
     // 地区导出的demo
 	// 用于调试模式查看运行耗时，包含数据查询耗费的时间
 	$time =microtime(true);
 
+
 	// 用查询构造器
 	$query=\App\Models\Area::where('parent_code',0); // 查父级为0的地区，即查省份
 	\Aoding9\Laravel\Xlswriter\Export\Demo\AreaExport::make($query,$time)->export();
+
 
 	// 用数组或集合
 	// 数据量大时占用很高，需要修改内存上限，不推荐
@@ -387,7 +391,7 @@ public function exportModels() {
 }
 ```
 
-### 其他
+## 其他
 
 合并单元格的范围请使用大写字母，小写字母会报错。
 
@@ -397,7 +401,7 @@ public function exportModels() {
 
 为了方便自定义排版和修改数据，基类属性和方法都为public，方便子类重写
 
-#### 方法补充
+## 方法补充
 
 `setMax()` 设置最大导出的数据量
 

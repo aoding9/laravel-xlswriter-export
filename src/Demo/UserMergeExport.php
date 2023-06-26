@@ -27,7 +27,7 @@ class UserMergeExport extends BaseExport {
         return [
             $this->index,      // 自增序号，绑定在模型中
             $row->id,
-            \Faker\Factory::create('zh_CN')->name,
+            $row->name = \Faker\Factory::create('zh_CN')->name,
             $this->getGender(),
             $row->created_at,
         ];
