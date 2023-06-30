@@ -100,7 +100,7 @@ abstract class BaseExport {
     
     /**
      * @Desc 初始化数据源，判断数据源的类型
-     * @param array|Collection|Builder $dataSource
+     * @param array|Collection|Builder|null $dataSource
      * @return $this
      * @Date 2023/6/21 22:02
      */
@@ -111,6 +111,8 @@ abstract class BaseExport {
             $dataSource = [];
         } else if (is_array($dataSource) || $dataSource instanceof Collection) {
             $this->dataSourceType = 'collection';
+        }else{
+            $this->dataSourceType = 'other';
         }
         // 如果是collection导入，将数据源设置到data属性
         $this->setData($dataSource);
@@ -366,9 +368,9 @@ abstract class BaseExport {
     
     /**
      * @var bool 是否使用全局样式代替列默认样式
-     * 使用列默认样式会导致末尾行之后仍有边框，但是速度更快
+     * 设置为否则使用列默认样式，会导致末尾行之后仍有边框，但是速度更快
      */
-    public $useGlobalStyle = false;
+    public $useGlobalStyle = true;
     /**
      * @var resource 全局默认样式
      */
@@ -1008,6 +1010,8 @@ abstract class BaseExport {
                 return $this->buildDataFromQuery($page, $perPage);
             case 'collection':
                 return $this->buildDataFromCollection($page, $perPage);
+            case 'other':
+                return $this->buildDataFromOther($page, $perPage);
             default :
                 throw new Exception('无效的数据源类型');
         }
@@ -1032,6 +1036,18 @@ abstract class BaseExport {
      * @Date 2023/6/25 19:49
      */
     public function buildDataFromCollection(?int $page = null, ?int $perPage = null) {
+        return $this->data->forPage($page, $perPage);
+    }
+    
+    /**
+     * @Desc 从其他方式获取分块数据
+     * @param int|null $page
+     * @param int|null $perPage
+     * @return Collection
+     * @Date 2023/6/25 19:49
+     */
+    public function buildDataFromOther(?int $page = null, ?int $perPage = null){
+        // 请重写此方法，返回自定义数据
         return $this->data->forPage($page, $perPage);
     }
     

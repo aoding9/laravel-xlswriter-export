@@ -8,7 +8,7 @@ laravel扩展：xlswriter导出
 
 ## 导出时间和内存占用情况
 
-以下测试使用了扩展中的Demo`Aoding9\Laravel\Xlswriter\Export\Demo\AreaExport`导出areas地区表，使用分页查询，包括了数据查询的时间。
+以下测试使用了扩展中的Demo`Aoding9\Laravel\Xlswriter\Export\Demo\AreaExport`导出areas地区表，有4列，使用分页查询，包括了数据查询的时间。
 
 **chunk=2000,导出1万条**
 
@@ -414,3 +414,11 @@ public function exportModels() {
 `freezePanes()`设置表格冻结的行列
 
 更多方法详见BaseExport，注释非常详细
+
+## 版本更新
+
+- v1.2.1 (2023-6-30)
+  - 数据源新增other类型，非query/array/collection则均为other
+  - 新增buildDataFromOther，当数据源为other类型时，buildData会调用它，重写以返回自定义数据集合
+  - 构造函数现在数据源默认为null，即other类型。
+  - $useGlobalStyle现在默认为true，使用全局默认样式代替列默认样式，效果是数据末尾行之后不再有边框。

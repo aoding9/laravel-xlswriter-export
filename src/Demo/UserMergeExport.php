@@ -40,7 +40,6 @@ class UserMergeExport extends BaseExport {
     public $rowHeight = 30;       // 行高
     public $titleRowHeight = 40;  // 首行大标题行高
     public $headerRowHeight = 50; // 表头行高
-    public $useGlobalStyle=false; // 是否用全局默认样式代替列默认样式（为ture时，数据末尾行下方没有边框，但是速度会慢一点点）
     
     /**
      * @Desc 在分块数据插入每行后回调（到下一个分块，则上一分块被销毁）
