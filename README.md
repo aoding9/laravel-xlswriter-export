@@ -403,12 +403,6 @@ public function exportModels() {
 
 ## 方法属性补充介绍
 
-`setMax()` 设置最大导出的数据量
-
-`setChunkSize()`设置每个分块的数据量
-
-`setDebug()`设置是否开启调试，查看导出的耗时和内存占用
-
 `useFreezePanes()`是否启用表格冻结功能
 
 `freezePanes()`设置表格冻结的行列
