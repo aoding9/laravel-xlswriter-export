@@ -2,19 +2,19 @@
 
 laravel扩展：xlswriter导出
 
-之前用了laravel-excel做数据导出，太耗内存速度也慢，数据量大的时候内存占用容易达到php上限，或者响应超时，换成xlswriter这个扩展来做。
+之前用了laravel-excel做数据导出，很耗内存速度也慢，数据量大的时候内存占用容易达到php上限，或者响应超时，换成xlswriter这个扩展来做。
 
-由于xlswriter直接导出的表格不够美观，在实际使用中，往往需要合并单元格和自定义表格样式等，我进行了一些封装，使用更加方便简洁，定义表头和数据的方式也更加直观。
+由于xlswriter直接导出的表格不够美观，在使用中，往往需要合并单元格和自定义表格样式等，我进行了一些封装，使用更加方便简洁，定义表头和数据的方式也更加直观。
 
 ## 导出时间和内存占用情况
 
 以下测试使用了扩展中的Demo`Aoding9\Laravel\Xlswriter\Export\Demo\AreaExport`导出areas地区表，有4列，使用分页查询，包括了数据查询的时间。
 
-**chunk=2000,导出1万条**
+**chunkSize=2000,导出1万条**
 
 ![laravel扩展：xlswriter导出，自定义复杂合并及样式](https://cdn.learnku.com/uploads/images/202306/21/78338/2ByrnkgGCh.png!large)
 
-**chunk=50000 导出50万条**
+**chunkSize=50000 导出50万条**
 
 ![laravel扩展：xlswriter导出，自定义复杂合并及样式](https://cdn.learnku.com/uploads/images/202306/21/78338/4Vt41lzmc6.png!large)
 
@@ -193,18 +193,18 @@ class UserExportFromCollection extends BaseExport {
 
 #### 复杂合并单元格，指定单元格样式
 
-在每个分块插入之前，每行的数据会被绑定一个index值，在每行插入后，会回调`afterInsertEachRowInEachChunk`，在其中可以使用`getCurrentLine`获取当前行数，使用
-`getRowByIndex`获取分块中index对应的rowData
+在每个分块插入之前，每行的数据会被绑定一个index值，在每行插入后，会回调`afterInsertEachRowInEachChunk()`，在其中可以使用`getCurrentLine`获取当前行数，使用
+`getRowByIndex()`获取分块中index对应的rowData
 
-`setHeaderData` 设置表头数据，重写可修改预定义的表头、标题等
+`setHeaderData()` 设置表头数据，重写可修改预定义的表头、标题等
 
 `$this->excel`是xlswriter的Excel实例，可以使用`$this->excel->mergeCells`合并单元格，此时可以指定自定义样式，样式设置方法请参考官方文档。
 
-`afterInsertData`是所有数据插入完成后的回调，默认在其中调用了`mergeCellsAfterInsertData`方法，合并标题，合并表头，或者对整个表格进行最后修改。
+`afterInsertData()`是所有数据插入完成后的回调，默认在其中调用了`mergeCellsAfterInsertData`方法，合并标题，合并表头，或者对整个表格进行最后修改。可以用于整个的纵向合并，如`A1:A100`
 
-`insertCellHandle`是插入单元格数据的处理方法，重写后可实现单独设置某个单元格的样式
+`insertCellHandle()`是插入单元格数据的处理方法，重写后可实现单独设置某个单元格的样式
 
-`getCellName`可以根据传入的行数和列数，返回单元格名称，配合insertCellHandle，可判断当前写入的单元格
+`getCellName()`可以根据传入的行数和列数，返回单元格名称，配合insertCellHandle，可判断当前写入的单元格
 
 ```php
 <?php
@@ -401,7 +401,7 @@ public function exportModels() {
 
 为了方便自定义排版和修改数据，基类属性和方法都为public，方便子类重写
 
-## 方法补充
+## 方法属性补充介绍
 
 `setMax()` 设置最大导出的数据量
 
@@ -412,6 +412,58 @@ public function exportModels() {
 `useFreezePanes()`是否启用表格冻结功能
 
 `freezePanes()`设置表格冻结的行列
+
+`getColumn()` 传入列数得到对应字母
+
+`getColumnIndexByName()` 根据字母列名得到列数
+
+`store()` 保存到文件，export里面主要是这个方法
+
+`shouldDelete()` 设置下载后是否删除文件
+
+`export()` 导出一条龙，保存文件->下载->下载后删除文件
+
+`$startDataRow` 数据开始的行数
+
+`$currentLine` 当前插入数据行,第一行为0，excel显示的行数需要再此基础上+1
+
+`getCurrentLine()` 返回$currentLine+1
+
+`$index` 数据行的序号，不包括表头
+
+`getIndex()` 返回$index
+
+`getRowInChunkByIndex()` 根据序号获取rowData，分块时会被销毁
+
+`$chunkData` 分块数据
+
+`$max和setMax()`设置最大导出数据量
+
+`setUseTitle()` 是否使用标题行（插入第一行的合并标题）
+
+`$chunkSize和setChunkSize()`设置每个分块的数据量
+
+`$debug和setDebug()` 用dump()输出每个分块导出后的内存占用和耗费时间
+
+`$completed` 已插入的数据量，用来计算导出的进度
+
+`$dataSourceType` 根据构造函数的第一个参数，设置数据源类型,传入查询构造器Builder则为query类型，传入数组和集合为collection类型,其他情况为other类型
+
+`initDataSource()` 初始化数据源，重写以扩展自己的类型
+
+`buildData()` 根据数据源类型，执行对应的方法获取数据
+
+`buildDataFromQuery() buildDataFromCollection() buildDataFromOther()` 重写后可以实现你自己的数据获取方法
+
+`chunk()` 分块处理方法
+
+`$this->excel->mergeCells()` 合并单元格
+
+`$headerLen` 表头长度 `count($this->getHeader())`
+
+`$end` 获取最后一列的字母 `$this->getColumn($this->headerLen - 1)`
+
+
 
 更多方法详见BaseExport，注释非常详细
 

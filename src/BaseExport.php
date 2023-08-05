@@ -1040,7 +1040,7 @@ abstract class BaseExport {
     }
     
     /**
-     * @Desc 从其他方式获取分块数据
+     * @Desc 从其他方式获取分块数据(请重写此方法)
      * @param int|null $page
      * @param int|null $perPage
      * @return Collection
