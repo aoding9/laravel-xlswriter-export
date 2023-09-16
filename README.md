@@ -4,7 +4,7 @@ laravel扩展：xlswriter导出
 
 之前用了laravel-excel做数据导出，很耗内存速度也慢，数据量大的时候内存占用容易达到php上限，或者响应超时，换成xlswriter这个扩展来做。
 
-由于xlswriter直接导出的表格不够美观，在使用中，经常需要合并单元格和自定义表格样式等，我进行了一些封装，使用更加方便简洁，定义表头和数据的方式也更加直观。
+由于直接导出的表格不太美观，经常需要进行合并单元格和自定义表格样式等操作，我对此进行了一些封装，使用更加方便直观。
 
 ## 导出时间和内存占用情况
 
@@ -58,7 +58,9 @@ laravel扩展：xlswriter导出
 
 `composer config repo.packagist composer https://packagist.org`
 
-由于官方源下载慢，国内镜像又有各种问题可能导致安装失败，也可以把以下代码添加到composer.json，直接从github安装
+官方源下载慢，国内镜像偶尔出问题可能导致安装失败，也可以把以下代码添加到composer.json，直接从github安装
+
+如果无法访问github,可以将url改为gitee：`https://gitee.com/aoding9/laravel-xlswriter-export`
 
 ```json
 {
@@ -73,7 +75,7 @@ laravel扩展：xlswriter导出
 
 ## 配置
 
-在导出类中定义BaseExport的相关属性实现配置，或者在make之后调用相关属性的set方法
+在导出类中定义BaseExport的相关属性进行配置，或者在make之后调用相关属性的set方法
 
 ## 使用
 
@@ -391,6 +393,15 @@ public function exportModels() {
 }
 ```
 
+### 3、通过swoole使用
+
+由于swoole中不能调用`exit()`方法，需要在控制器中直接return下载响应
+
+```php
+return UserExport::make()->export()
+```
+
+
 ## 其他
 
 合并单元格的范围请使用大写字母，小写字母会报错。
@@ -468,3 +479,5 @@ public function exportModels() {
   - 新增buildDataFromOther，当数据源为other类型时，buildData会调用它，重写以返回自定义数据集合
   - 构造函数现在数据源默认为null，即other类型。
   - $useGlobalStyle现在默认为true，使用全局默认样式代替列默认样式，效果是数据末尾行之后不再有边框。
+- v1.2.2 (2023-9-16)
+  - download时判断`app()->has('swoole')`，如果使用了swoole，将返回下载响应，代替默认的exit()

@@ -42,7 +42,7 @@ class UserMergeExport extends BaseExport {
     public $headerRowHeight = 50; // 表头行高
     
     /**
-     * @Desc 在分块数据插入每行后回调（到下一个分块，则上一分块被销毁）
+     * 在分块数据插入每行后回调（到下一个分块，则上一分块被销毁）
      * @param $row
      */
     public function afterInsertEachRowInEachChunk($row) {
@@ -72,7 +72,7 @@ class UserMergeExport extends BaseExport {
     }
     
     /**
-     * @Desc 插入数据完成后进行合并
+     * 插入数据完成后进行合并
      * @return array[]
      */
     public function mergeCellsAfterInsertData() {
@@ -109,7 +109,7 @@ class UserMergeExport extends BaseExport {
     // public function getSpecialStyle3() {}
     
     /**
-     * @Desc 重写插入单元格数据的处理方法，可单独设置某个单元格的样式
+     * 重写插入单元格数据的处理方法，可单独设置某个单元格的样式
      * @param int           $currentLine  单元格行数
      * @param int           $column       单元格列数
      * @param mixed         $data         插入的数据
