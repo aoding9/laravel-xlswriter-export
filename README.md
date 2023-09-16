@@ -397,8 +397,14 @@ public function exportModels() {
 
 由于swoole中不能调用`exit()`方法，需要在控制器中直接return下载响应
 
+为此，需要在导出类中将`$useSwoole`属性设为true，然后在控制器中return导出类的export()返回值
+
 ```php
-return UserExport::make()->export()
+// UserExport
+public $useSwoole = true;
+
+// UserController
+return UserExport::make()->export();
 ```
 
 
@@ -468,6 +474,7 @@ return UserExport::make()->export()
 
 `$end` 获取最后一列的字母 `$this->getColumn($this->headerLen - 1)`
 
+`$useSwoole` 是否使用了swoole
 
 
 更多方法详见BaseExport，注释非常详细
@@ -480,4 +487,4 @@ return UserExport::make()->export()
   - 构造函数现在数据源默认为null，即other类型。
   - $useGlobalStyle现在默认为true，使用全局默认样式代替列默认样式，效果是数据末尾行之后不再有边框。
 - v1.2.2 (2023-9-16)
-  - download时判断`app()->has('swoole')`，如果使用了swoole，将返回下载响应，代替默认的exit()
+  - download时调用`$this->useSwoole()`判断是否使用了swoole，如果使用了，将返回下载响应，代替默认的exit()

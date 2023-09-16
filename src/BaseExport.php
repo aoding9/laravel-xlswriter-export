@@ -562,11 +562,7 @@ abstract class BaseExport {
         return $this->excel->setRow("A{$this->getCurrentLine()}", $this->headerRowHeight);
     }
     
-    /**
-     * @var bool 导出后是否应该删除文件
-     */
-    public $shouldDelete = false;
-    
+
     /**
      * @var int 数据开始的行数，第一行为0
      */
@@ -844,22 +840,40 @@ abstract class BaseExport {
         // 将最终计算出的列数值减去1，以得到以0为起点的列数值
         return $this->columnIndexMap[$columnName] = $columnIndex - 1;
     }
-    
+
+    /**
+     * @var bool 导出后是否应该删除文件
+     */
+    public $shouldDelete = true;
+
     /**
      * 是否在下载后删除
-     * @param bool $v
+     * @param bool|null $v
      * @return $this
      * @Date 2023/6/25 19:40
      */
-    public function shouldDelete($v = true) {
-        $this->shouldDelete = $v;
+    public function shouldDelete(?bool $v = null) {
+        $this->shouldDelete = is_null($v) ? $this->shouldDelete : $v;
         return $this;
+    }
+
+    /**
+     * @var bool 是否使用了swoole
+     */
+    public $useSwoole = false;
+
+    /**
+     * 是否使用了swoole
+     * @param bool|null $v
+     * @Date 2023/6/25 19:40
+     */
+    public function useSwoole(?bool $v = null) {
+        return is_null($v) ? $this->useSwoole : $v;
     }
 
     /**
      * 执行下载
      * @param null $filePath
-     * @return BinaryFileResponse|void
      * @Date 2023/6/25 19:40
      */
     public function download($filePath = null) {
@@ -870,7 +884,7 @@ abstract class BaseExport {
         $response = response()->download($this->filePath)->deleteFileAfterSend($this->shouldDelete);
 
         // 如果使用swoole进行导出，不能调用exit()，需要控制器直接返回下载响应
-        if (function_exists('swoole_version')) {
+        if ($this->useSwoole()) {
             return $response;
         }
         $response->send();
