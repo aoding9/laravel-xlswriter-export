@@ -87,7 +87,7 @@ laravel扩展：xlswriter导出
 
 以用户导出为例，首先创建一个UserExport导出类，继承`Aoding9\Laravel\Xlswriter\Export\BaseExport`基类，一般放在app\Exports目录下
 
-`$header`中，column是列名，按abcd顺序排列，仅作为标识不参与实际导出，列很多时方便一眼看出列名，防止写错位，width是列宽，name是填充的表头文本。
+`$header`中，column是列名，按abcd顺序排列，仅作为标识不参与实际导出，列很多时方便一眼看出列名，防止写错位，觉得麻烦不写也可以，width是列宽，name是填充的表头文本。
 
 若要合并表头，需定义最细分的列以指明每一列的宽度，合并列在另外的方法中去处理。
 
@@ -202,9 +202,9 @@ class UserExportFromCollection extends BaseExport {
 
 `$this->excel`是xlswriter的Excel实例，可以使用`$this->excel->mergeCells`合并单元格，此时可以指定自定义样式，样式设置方法请参考官方文档。
 
-`afterInsertData()`是所有数据插入完成后的回调，默认在其中调用了`mergeCellsAfterInsertData`方法，合并标题，合并表头，或者对整个表格进行最后修改。可以用于整个的纵向合并，如`A1:A100`
+`afterInsertData()`是所有数据插入完成后的回调，默认在其中调用了`mergeCellsAfterInsertData`方法，合并标题，合并表头，或者对整个表格进行最后修改。可以用于整个的纵向合并，如`A1:A100`，还可以设置打印纸张大小方向，设置文档密码保护等，参考xlswriter文档即可。
 
-`insertCellHandle()`是插入单元格数据的处理方法，重写后可实现单独设置某个单元格的样式
+`insertCellHandle()`是插入单元格数据的处理方法，重写后可实现设置特定单元格的样式，或者对特定单元格插入公式、图片等
 
 `getCellName()`可以根据传入的行数和列数，返回单元格名称，配合insertCellHandle，可判断当前写入的单元格
 
@@ -476,8 +476,9 @@ return UserExport::make()->export();
 
 `$useSwoole` 是否使用了swoole
 
-
 更多方法详见BaseExport，注释非常详细
+
+有什么建议或者问题，欢迎留言讨论
 
 ## 版本更新
 
